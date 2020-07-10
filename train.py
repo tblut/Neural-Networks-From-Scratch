@@ -4,8 +4,9 @@ from nnfs.model import Model
 from nnfs.layers import Linear, Sigmoid, ReLU
 from nnfs.losses import MSELoss, BinaryCrossEntropyLoss
 from nnfs.optimizers import SGD
-from nnfs.utils import gen_xor_data, split_train_test, accuracy_score, check_gradients
+from nnfs.utils import gen_xor_data, split_train_test, check_gradients
 from nnfs.initializers import he_normal, ones, zeros
+from nnfs.metrics import binary_accuracy
 
 
 if __name__ == "__main__":
@@ -20,19 +21,31 @@ if __name__ == "__main__":
     print(len(X_train), len(y_train), len(X_test), len(y_test))
 
     layers = [
-        Linear(X.shape[1], 2, weights_inititalizer=he_normal),
+        Linear(X.shape[1], 4, weights_inititalizer=he_normal),
         ReLU(),
-        Linear(2, 1, weights_inititalizer=he_normal),
+        Linear(4, 4, weights_inititalizer=he_normal),
+        ReLU(),
+        Linear(4, 1, weights_inititalizer=he_normal),
         Sigmoid()
     ]
     model = Model(layers=layers,
                   loss=BinaryCrossEntropyLoss(),
-                  optimizer=SGD(lr=0.03))
-    model.train(X_train, y_train, epochs=50, batch_size=32, validation_data=(X_valid, y_valid))
+                  optimizer=SGD(lr=0.01))
+    history = model.train(X_train, y_train,
+                          epochs=200, batch_size=32,
+                          validation_data=(X_valid, y_valid),
+                          metrics={'acc': binary_accuracy},
+                          verbose=True)
+    
     #check_gradients(model, batch_size=8, eps=0.0001)
 
-    y_pred = (model.predict(X_test) > 0.5).astype(np.int32)
-    print("accuracy:", accuracy_score(y_pred, y_test.astype(np.int32)))
+    y_pred = model.predict(X_test)
+    print("test_acc:", binary_accuracy(y_pred, y_test.astype(np.int32)))
 
     #plt.scatter(X[:, 0], X[:, 1], c=y)
-    #plt.show()
+    plt.plot(history['train_loss'], label='train_loss')
+    plt.plot(history['valid_loss'], label='valid_loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.show()

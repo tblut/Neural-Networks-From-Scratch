@@ -2,10 +2,6 @@ import numpy as np
 from nnfs.layers import Linear
 
 
-def accuracy_score(y_pred, y_target):
-    return np.mean(y_pred.reshape(-1) == y_target.reshape(-1))
-
-
 def gen_xor_data(samples):
     X = np.random.uniform(-5, 5, (samples, 2)).astype(np.float32)
     y = [int(x[0] * x[1] > 0.0) for x in X]

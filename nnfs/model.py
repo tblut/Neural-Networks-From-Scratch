@@ -1,6 +1,5 @@
 import numpy as np
 from nnfs.layers import Linear
-from nnfs.utils import accuracy_score
 
 
 class Model:
@@ -16,10 +15,19 @@ class Model:
             outputs = layer.forward(outputs)
         return outputs
 
-    def train(self, X, y, epochs=20, batch_size=32, validation_data=None):
+    def train(self, X, y, epochs=20, batch_size=32, validation_data=None, metrics=None, verbose=1):
+        history = {'train_loss': [0.0] * epochs}
+        if validation_data:
+            history['valid_loss'] = [0.0] * epochs
+        if metrics:
+            for name, _ in metrics.items():
+                history[f'train_{name}'] = [0.0] * epochs
+                if validation_data:
+                    history[f'valid_{name}'] = [0.0] * epochs
+
         n_batches = (len(X) + batch_size - 1) // batch_size
         for epoch in range(epochs):
-            total_loss = 0.0
+            train_loss = 0.0
             for batch_index in range(n_batches):
                 batch_start = batch_index * batch_size
                 batch_end = max((batch_index + 1) * batch_size, X.shape[0])
@@ -28,7 +36,7 @@ class Model:
 
                 y_pred = self.predict(X_batch)
                 batch_loss = self.loss(y_pred, y_batch)
-                total_loss += batch_loss
+                train_loss += batch_loss / n_batches
 
                 grad_in = self.loss.get_grad_in(y_pred, y_batch)
                 for layer in reversed(self.layers):
@@ -43,16 +51,40 @@ class Model:
                     grad_param = layer.get_grad_param(grad_out)
                     layer.update_parameters(self.optimizer, grad_param)
 
-            log_str = f"epoch: {epoch+1}/{epochs} - loss: {total_loss/n_batches}"
+                if metrics:
+                    for name, metric in metrics.items():
+                        history[f'train_{name}'][epoch] += metric(y_pred, y_batch) / n_batches
+
+            history['train_loss'][epoch] = train_loss
+
             if validation_data:
-                valid_accuracy = 0.0
+                valid_loss = 0.0
                 n_valid_batches = (len(validation_data[0]) + batch_size - 1) // batch_size
                 for batch_index in range(n_valid_batches):
                     batch_start = batch_index * batch_size
                     batch_end = max((batch_index + 1) * batch_size, validation_data[0].shape[0])
                     X_batch = validation_data[0][batch_start:batch_end, ...]
                     y_batch = validation_data[1][batch_start:batch_end, ...]
-                    y_pred = (self.predict(X_batch) > 0.5).astype(np.int32)
-                    valid_accuracy += accuracy_score(y_pred, y_batch)
-                log_str += f" - valid_acc: {valid_accuracy/n_valid_batches}"
+                    y_pred = self.predict(X_batch)
+                    batch_loss = self.loss(y_pred, y_batch)
+                    valid_loss += batch_loss / n_valid_batches
+                    if metrics:
+                        for name, metric in metrics.items():
+                            history[f'valid_{name}'][epoch] += metric(y_pred, y_batch) / n_valid_batches
+                history['valid_loss'][epoch] = valid_loss
+
+            if not verbose:
+                continue
+            log_str = f"epoch: {epoch+1}/{epochs} - train_loss: {train_loss}"
+            if metrics:
+                for name, metric in metrics.items():
+                    value = history[f'train_{name}'][epoch]
+                    log_str += f" - train_{name}: {value}"
+            if validation_data:
+                log_str += f" - valid_loss: {valid_loss}"
+                if metrics:
+                    for name, metric in metrics.items():
+                        value = history[f'valid_{name}'][epoch]
+                        log_str += f" - valid_{name}: {value}"
             print(log_str)
+        return history
