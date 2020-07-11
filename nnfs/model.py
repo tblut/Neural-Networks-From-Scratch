@@ -1,9 +1,10 @@
 import numpy as np
 from nnfs.layers import Linear
+from nnfs.optimizers import SGD
 
 
 class Model:
-    def __init__(self, layers, loss, optimizer):
+    def __init__(self, layers, loss, optimizer=SGD(lr=0.01)):
         self.layers = layers
         self.loss = loss
         self.optimizer = optimizer

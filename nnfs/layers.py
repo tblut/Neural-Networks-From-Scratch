@@ -7,7 +7,7 @@ class Linear:
                  weights_inititalizer=glorot_normal,
                  bias_initializer=zeros):
         self.weights = weights_inititalizer(n_inputs, n_neurons)
-        self.biases = zeros(1, n_neurons)
+        self.biases = bias_initializer(1, n_neurons)
 
     def forward(self, inputs):
         self._inputs = inputs
