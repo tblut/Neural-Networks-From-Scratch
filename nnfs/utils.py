@@ -1,12 +1,45 @@
 import numpy as np
+import math
+import tarfile
+import gzip
+import shutil
+from pathlib import Path
+from zipfile import ZipFile
+from urllib.request import urlopen
+from urllib.parse import urlparse
 from nnfs.layers import Linear
 
 
-def gen_xor_data(samples):
-    X = np.random.uniform(-5, 5, (samples, 2)).astype(np.float32)
-    y = [int(x[0] * x[1] > 0.0) for x in X]
-    y = np.array(y, dtype=np.int32).reshape((len(y), 1))
-    return X, y
+def to_one_hot(labels, n_classes=None):
+    return np.identity(n_classes or labels.max() + 1)[labels.reshape(-1)]
+
+
+def download_file(url, target_dir, extract=None, verbose=1):
+    Path(target_dir).mkdir(parents=True, exist_ok=True)
+    filename = Path(urlparse(url).path).name
+    target_path = Path(target_dir, filename)
+    if not target_path.exists():
+        print(f"Downloading {url} ...")
+        with urlopen(url) as response:
+            with open(target_path, 'wb') as file:
+                file.write(response.read())
+
+    if extract:
+        print(f"Extracting {target_path} ...")
+        target_path = Path(target_path)
+        extract_path = Path(target_dir, target_path.stem)
+        if target_path.suffix == '.zip':
+            with ZipFile(target_path, 'r') as zip_file:
+                zip_file.extractall(extract_path)
+        elif '.tar' in target_path.suffixes:
+            with tarfile.open(target_path) as tar:
+                tar.extractall(extract_path)
+        elif target_path.suffix == '.gz':
+            with gzip.open(target_path, 'rb') as file_in:
+                with open(extract_path, 'wb') as file_out:
+                    shutil.copyfileobj(file_in, file_out)
+        
+    return str(extract_path) if extract else target_path
 
 
 def split_train_test(*arrays, test_size=None, train_size=None, shuffle=True, random_seed=None):
@@ -86,8 +119,9 @@ def compute_finite_grad(X, y, model, layer, eps=0.001):
 
 def check_gradients(model, batch_size=4, eps=0.0001):
     n_inputs = model.layers[0].weights.shape[0]
+    n_outputs = model.layers[-2].weights.shape[1]
     X = np.random.rand(batch_size, n_inputs)
-    y = np.ones((batch_size, 1))
+    y = np.identity(n_outputs)[np.random.random_integers(0, n_outputs-1, batch_size)]
 
     n_params = 0
     for layer in model.layers:

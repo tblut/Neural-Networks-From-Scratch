@@ -30,7 +30,7 @@ class Model:
             train_loss = 0.0
             for batch_index in range(n_batches):
                 batch_start = batch_index * batch_size
-                batch_end = max((batch_index + 1) * batch_size, X.shape[0])
+                batch_end = min((batch_index + 1) * batch_size, X.shape[0])
                 X_batch = X[batch_start:batch_end, ...]
                 y_batch = y[batch_start:batch_end, ...]
 
@@ -62,7 +62,7 @@ class Model:
                 n_valid_batches = (len(validation_data[0]) + batch_size - 1) // batch_size
                 for batch_index in range(n_valid_batches):
                     batch_start = batch_index * batch_size
-                    batch_end = max((batch_index + 1) * batch_size, validation_data[0].shape[0])
+                    batch_end = min((batch_index + 1) * batch_size, validation_data[0].shape[0])
                     X_batch = validation_data[0][batch_start:batch_end, ...]
                     y_batch = validation_data[1][batch_start:batch_end, ...]
                     y_pred = self.predict(X_batch)
@@ -75,16 +75,16 @@ class Model:
 
             if not verbose:
                 continue
-            log_str = f"epoch: {epoch+1}/{epochs} - train_loss: {train_loss}"
+            log_str = f"epoch: {epoch+1}/{epochs} - train_loss: {train_loss:.8f}"
             if metrics:
                 for name, metric in metrics.items():
                     value = history[f'train_{name}'][epoch]
-                    log_str += f" - train_{name}: {value}"
+                    log_str += f" - train_{name}: {value:.8f}"
             if validation_data:
-                log_str += f" - valid_loss: {valid_loss}"
+                log_str += f" - valid_loss: {valid_loss:.8f}"
                 if metrics:
                     for name, metric in metrics.items():
                         value = history[f'valid_{name}'][epoch]
-                        log_str += f" - valid_{name}: {value}"
+                        log_str += f" - valid_{name}: {value:.8f}"
             print(log_str)
         return history

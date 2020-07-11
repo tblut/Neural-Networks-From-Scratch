@@ -42,5 +42,19 @@ class ReLU:
         return np.maximum(0.0, inputs)
 
     def backward(self, grad_out):
-        grad_in = np.where(self._inputs > 0, 1.0, 0.0)
+        grad_in = np.where(self._inputs < 0.0, 0.0, 1.0)
         return grad_out * grad_in
+
+
+class Softmax:
+    def forward(self, inputs):
+        maxs = np.max(inputs, axis=1).reshape((-1, 1))
+        exps = np.exp(inputs - maxs)
+        self._outputs = exps / np.sum(exps, axis=1).reshape((-1, 1))
+        return self._outputs
+
+    def backward(self, grad_out):
+        a = np.empty((grad_out.shape[0], 1))
+        for i in range(a.shape[0]):
+            a[i, :] = np.dot(grad_out[i, :], self._outputs[i, :])
+        return self._outputs * (grad_out - a)
