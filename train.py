@@ -27,25 +27,24 @@ if __name__ == "__main__":
     print(len(X_train), len(y_train), len(X_test), len(y_test))
 
     layers = [
-        Linear(X_train.shape[1], 16, weights_inititalizer=he_normal),
+        Linear(X_train.shape[1], 16),
         ReLU(),
-        Linear(16, 16, weights_inititalizer=he_normal),
+        Linear(16, 16),
         ReLU(),
-        Linear(16, y_train.shape[1], weights_inititalizer=he_normal),
+        Linear(16, y_train.shape[1]),
         Softmax()
     ]
     model = Model(layers=layers,
                   loss=CrossEntropyLoss(),
-                  optimizer=SGD(lr=0.1))
+                  optimizer=SGD(lr=0.01))
     history = model.train(X_train, y_train,
-                          epochs=100, batch_size=600,
+                          epochs=100, batch_size=480,
                           validation_data=(X_valid, y_valid),
-                          metrics={'acc': multi_class_accuracy},
-                          verbose=True)
+                          metrics={'acc': multi_class_accuracy})
     
     #check_gradients(model, batch_size=7, eps=0.0001)
 
-    print("test_accuracy:", multi_class_accuracy(model.predict(X_test), y_test.astype(np.int32)))
+    print("test_accuracy:", multi_class_accuracy(model.predict(X_test), y_test))
 
     plt.plot(history['train_loss'], label='train_loss')
     plt.plot(history['valid_loss'], label='valid_loss')

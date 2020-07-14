@@ -1,10 +1,10 @@
 import numpy as np
-from nnfs.initializers import zeros, glorot_normal
+from nnfs.initializers import zeros, he_normal
 
 
 class Linear:
     def __init__(self, n_inputs, n_neurons,
-                 weights_inititalizer=glorot_normal,
+                 weights_inititalizer=he_normal,
                  bias_initializer=zeros):
         self.weights = weights_inititalizer(n_inputs, n_neurons)
         self.biases = bias_initializer(1, n_neurons)
