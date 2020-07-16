@@ -9,6 +9,21 @@ class Model:
         self.loss = loss
         self.optimizer = optimizer
 
+    def save_weights(self, filename):
+        weights = []
+        for layer in self.layers:
+            for param in layer.get_parameters():
+                weights.append(param.value)
+        np.savez(filename, *weights)
+
+    def load_weights(self, filename):
+        weights = np.load(filename)
+        param_index = 0
+        for layer in self.layers:
+            for param in layer.get_parameters():
+                param.value = weights[f'arr_{param_index}']
+                param_index += 1
+
     def predict(self, inputs):
         outputs = inputs
         for layer in self.layers:
