@@ -36,6 +36,7 @@ class Model:
 
                 y_pred = self.predict(X_batch)
                 batch_loss = self.loss(y_pred, y_batch)
+                batch_loss += np.sum([layer.get_loss() for layer in self.layers])
                 train_loss += batch_loss / n_batches
 
                 parameters = []
@@ -63,6 +64,7 @@ class Model:
                     y_batch = validation_data[1][batch_start:batch_end, ...]
                     y_pred = self.predict(X_batch)
                     batch_loss = self.loss(y_pred, y_batch)
+                    batch_loss += np.sum([layer.get_loss() for layer in self.layers])
                     valid_loss += batch_loss / n_valid_batches
                     if metrics:
                         for name, metric in metrics.items():

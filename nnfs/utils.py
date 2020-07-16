@@ -83,12 +83,14 @@ def compute_finite_grad(X, y, model, layer, eps=0.001):
         layer.weights.value[i] += eps
         layer.weights.value = layer.weights.value.reshape(weights.shape)
         output_pos = model.loss(model.predict(X), y)
+        output_pos += np.sum([l.get_loss() for l in model.layers])
         layer.weights.value = weights
 
         layer.weights.value = layer.weights.value.flatten()
         layer.weights.value[i] -= eps
         layer.weights.value = layer.weights.value.reshape(weights.shape)
         output_neg = model.loss(model.predict(X), y)
+        output_neg += np.sum([l.get_loss() for l in model.layers])
         layer.weights.value = weights
 
         grad_weights[param_index] = (output_pos - output_neg) / (2.0 * eps)
@@ -103,12 +105,14 @@ def compute_finite_grad(X, y, model, layer, eps=0.001):
         layer.biases.value[i] += eps
         layer.biases.value = layer.biases.value.reshape(biases.shape)
         output_pos = model.loss(model.predict(X), y)
+        output_pos += np.sum([l.get_loss() for l in model.layers])
         layer.biases.value = biases
 
         layer.biases.value = layer.biases.value.flatten()
         layer.biases.value[i] -= eps
         layer.biases.value = layer.biases.value.reshape(biases.shape)
         output_neg = model.loss(model.predict(X), y)
+        output_neg += np.sum([l.get_loss() for l in model.layers])
         layer.biases.value = biases
 
         grad_biases[param_index] = (output_pos - output_neg) / (2.0 * eps)

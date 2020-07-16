@@ -8,6 +8,7 @@ from nnfs.utils import to_one_hot, split_train_test, check_gradients, download_f
 from nnfs.initializers import *
 from nnfs.metrics import binary_accuracy, multi_class_accuracy
 from nnfs.datasets import mnist, xor
+from nnfs.regularizers import L1, L2
 
 import time
 
@@ -27,22 +28,22 @@ if __name__ == "__main__":
     print(len(X_train), len(y_train), len(X_test), len(y_test))
 
     layers = [
-        Linear(X_train.shape[1], 16),
+        Linear(X_train.shape[1], 16, weights_regularizer=L2()),
         ReLU(),
-        Linear(16, 16),
+        Linear(16, 16, weights_regularizer=L2()),
         ReLU(),
-        Linear(16, y_train.shape[1]),
+        Linear(16, y_train.shape[1], weights_regularizer=L2()),
         Softmax()
     ]
     model = Model(layers=layers,
                   loss=CrossEntropyLoss(),
-                  optimizer=SGD(lr=0.01))
+                  optimizer=SGD(lr=0.01, momentum=0.9))
     history = model.train(X_train, y_train,
                           epochs=100, batch_size=480,
                           validation_data=(X_valid, y_valid),
                           metrics={'acc': multi_class_accuracy})
     
-    #check_gradients(model, batch_size=7, eps=0.0001)
+    #check_gradients(model, batch_size=7, eps=1e-7)
 
     print("test_accuracy:", multi_class_accuracy(model.predict(X_test), y_test))
 

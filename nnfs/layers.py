@@ -13,13 +13,20 @@ class Layer:
     def get_parameters(self):
         return []
 
+    def get_loss(self):
+        return 0.0
+
 
 class Linear(Layer):
     def __init__(self, n_inputs, n_neurons,
                  weights_inititalizer=he_normal,
-                 bias_initializer=zeros):
+                 bias_initializer=zeros,
+                 weights_regularizer=None,
+                 bias_regularizer=None):
         self.weights = Parameter(weights_inititalizer(n_inputs, n_neurons))
         self.biases = Parameter(bias_initializer(1, n_neurons))
+        self.weights_regularizer = weights_regularizer
+        self.bias_regularizer = bias_regularizer
 
     def forward(self, inputs):
         self._cached_inputs = inputs
@@ -28,11 +35,23 @@ class Linear(Layer):
     def backward(self, grad_out):
         grad_in = np.dot(grad_out, self.weights.value.T)
         self.weights.grad = np.dot(self._cached_inputs.T, grad_out)
+        if self.weights_regularizer:
+            self.weights.grad += self.weights_regularizer.get_grad(self.weights.value)
         self.biases.grad = np.sum(grad_out, axis=0)
+        if self.bias_regularizer:
+            self.biases.grad += self.bias_regularizer.get_grad(self.biases.value)
         return grad_in
 
     def get_parameters(self):
         return [self.weights, self.biases]
+
+    def get_loss(self):
+        loss = 0.0
+        if self.weights_regularizer:
+            loss += self.weights_regularizer(self.weights.value)
+        if self.bias_regularizer:
+            loss += self.bias_regularizer(self.biases.value)
+        return loss
 
 
 class Sigmoid(Layer):
