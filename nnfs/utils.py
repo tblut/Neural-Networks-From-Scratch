@@ -75,45 +75,45 @@ def compute_finite_grad(X, y, model, layer, eps=0.001):
     if not isinstance(layer, Linear):
         raise TypeError("layer must be of type Linear")
 
-    grad_weights = np.zeros((layer.weights.size,))
+    grad_weights = np.zeros((layer.weights.value.size,))
     param_index = 0
-    weights = layer.weights
+    weights = layer.weights.value
     for i in range(weights.size):
-        layer.weights = layer.weights.flatten()
-        layer.weights[i] += eps
-        layer.weights = layer.weights.reshape(weights.shape)
+        layer.weights.value = layer.weights.value.flatten()
+        layer.weights.value[i] += eps
+        layer.weights.value = layer.weights.value.reshape(weights.shape)
         output_pos = model.loss(model.predict(X), y)
-        layer.weights = weights
+        layer.weights.value = weights
 
-        layer.weights = layer.weights.flatten()
-        layer.weights[i] -= eps
-        layer.weights = layer.weights.reshape(weights.shape)
+        layer.weights.value = layer.weights.value.flatten()
+        layer.weights.value[i] -= eps
+        layer.weights.value = layer.weights.value.reshape(weights.shape)
         output_neg = model.loss(model.predict(X), y)
-        layer.weights = weights
+        layer.weights.value = weights
 
         grad_weights[param_index] = (output_pos - output_neg) / (2.0 * eps)
         param_index += 1
-    grad_weights = grad_weights.reshape(layer.weights.shape)
+    grad_weights = grad_weights.reshape(layer.weights.value.shape)
 
-    grad_biases = np.zeros((layer.biases.size,))
+    grad_biases = np.zeros((layer.biases.value.size,))
     param_index = 0
-    biases = layer.biases
+    biases = layer.biases.value
     for i in range(biases.size):
-        layer.biases = layer.biases.flatten()
-        layer.biases[i] += eps
-        layer.biases = layer.biases.reshape(biases.shape)
+        layer.biases.value = layer.biases.value.flatten()
+        layer.biases.value[i] += eps
+        layer.biases.value = layer.biases.value.reshape(biases.shape)
         output_pos = model.loss(model.predict(X), y)
-        layer.biases = biases
+        layer.biases.value = biases
 
-        layer.biases = layer.biases.flatten()
-        layer.biases[i] -= eps
-        layer.biases = layer.biases.reshape(biases.shape)
+        layer.biases.value = layer.biases.value.flatten()
+        layer.biases.value[i] -= eps
+        layer.biases.value = layer.biases.value.reshape(biases.shape)
         output_neg = model.loss(model.predict(X), y)
-        layer.biases = biases
+        layer.biases.value = biases
 
         grad_biases[param_index] = (output_pos - output_neg) / (2.0 * eps)
         param_index += 1
-    grad_biases = grad_biases.reshape(layer.biases.shape)
+    grad_biases = grad_biases.reshape(layer.biases.value.shape)
     return grad_weights, grad_biases
 
 
@@ -126,7 +126,7 @@ def check_gradients(model, batch_size=4, eps=0.0001):
     n_params = 0
     for layer in model.layers:
         if isinstance(layer, Linear):
-            n_params += layer.weights.size + layer.biases.size
+            n_params += layer.weights.value.size + layer.biases.value.size
     grad_finite = np.zeros((n_params,))
 
     param_index = 0
@@ -145,19 +145,15 @@ def check_gradients(model, batch_size=4, eps=0.0001):
     grad_bprop = np.zeros((n_params,))
     grad_in = model.loss.get_grad_in(model.predict(X), y)
     for layer in reversed(model.layers):
-        if isinstance(layer, Linear):
-            model.grad_table[layer] = grad_in
         grad_in = layer.backward(grad_in)
-
+        
     for layer in model.layers:
         if not isinstance(layer, Linear):
             continue
-        grad_out = model.grad_table[layer]
-        grad_param = layer.get_grad_param(grad_out)
-        for grad in grad_param:
+        for grad in [p.grad for p in layer.get_parameters()]:
             for param in grad.flatten():
                 grad_bprop[param_index] = param
-                param_index += 1
+                param_index += 1   
 
     print("grad_finite:", grad_finite)
     print("grad_bprop:", grad_bprop)

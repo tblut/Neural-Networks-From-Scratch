@@ -2,59 +2,68 @@ import numpy as np
 from nnfs.initializers import zeros, he_normal
 
 
-class Linear:
+class Parameter:
+    def __init__(self, initial_value):
+        self.shape = initial_value.shape
+        self.value = initial_value
+        self.grad = np.zeros(initial_value.shape)
+
+
+class Layer:
+    def get_parameters(self):
+        return []
+
+
+class Linear(Layer):
     def __init__(self, n_inputs, n_neurons,
                  weights_inititalizer=he_normal,
                  bias_initializer=zeros):
-        self.weights = weights_inititalizer(n_inputs, n_neurons)
-        self.biases = bias_initializer(1, n_neurons)
+        self.weights = Parameter(weights_inititalizer(n_inputs, n_neurons))
+        self.biases = Parameter(bias_initializer(1, n_neurons))
 
     def forward(self, inputs):
-        self._inputs = inputs
-        return np.dot(inputs, self.weights) + self.biases
+        self._cached_inputs = inputs
+        return np.dot(inputs, self.weights.value) + self.biases.value
 
     def backward(self, grad_out):
-        return np.dot(grad_out, self.weights.T)
+        grad_in = np.dot(grad_out, self.weights.value.T)
+        self.weights.grad = np.dot(self._cached_inputs.T, grad_out)
+        self.biases.grad = np.sum(grad_out, axis=0)
+        return grad_in
 
-    def get_grad_param(self, grad_out):
-        grad_weights = np.dot(self._inputs.T, grad_out)
-        grad_biases = np.sum(grad_out, axis=0)
-        return [grad_weights, grad_biases]
-
-    def update_parameters(self, optimizer, grad_param):
-        self.weights = optimizer(self.weights, grad_param[0])
-        self.biases = optimizer(self.biases, grad_param[1])
+    def get_parameters(self):
+        return [self.weights, self.biases]
 
 
-class Sigmoid:
+class Sigmoid(Layer):
     def forward(self, inputs):
-        self._inputs = inputs
+        self._cached_inputs = inputs
         return 1.0 / (1.0 + np.exp(-inputs))
 
     def backward(self, grad_out):
-        sig = 1.0 / (1.0 + np.exp(-self._inputs))
+        sig = 1.0 / (1.0 + np.exp(-self._cached_inputs))
         return grad_out * sig * (1.0 - sig)
 
 
-class ReLU:
+class ReLU(Layer):
     def forward(self, inputs):
-        self._inputs = inputs
+        self._cached_inputs = inputs
         return np.maximum(0.0, inputs)
 
     def backward(self, grad_out):
-        grad_in = np.where(self._inputs < 0.0, 0.0, 1.0)
+        grad_in = np.where(self._cached_inputs < 0.0, 0.0, 1.0)
         return grad_out * grad_in
 
 
-class Softmax:
+class Softmax(Layer):
     def forward(self, inputs):
         maxs = np.max(inputs, axis=1).reshape((-1, 1))
         exps = np.exp(inputs - maxs)
-        self._outputs = exps / np.sum(exps, axis=1).reshape((-1, 1))
-        return self._outputs
+        self._cached_outputs = exps / np.sum(exps, axis=1).reshape((-1, 1))
+        return self._cached_outputs
 
     def backward(self, grad_out):
         a = np.empty((grad_out.shape[0], 1))
         for i in range(a.shape[0]):
-            a[i, :] = np.dot(grad_out[i, :], self._outputs[i, :])
-        return self._outputs * (grad_out - a)
+            a[i, :] = np.dot(grad_out[i, :], self._cached_outputs[i, :])
+        return self._cached_outputs * (grad_out - a)

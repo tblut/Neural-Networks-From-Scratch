@@ -8,7 +8,6 @@ class Model:
         self.layers = layers
         self.loss = loss
         self.optimizer = optimizer
-        self.grad_table = {}
 
     def predict(self, inputs):
         outputs = inputs
@@ -39,18 +38,14 @@ class Model:
                 batch_loss = self.loss(y_pred, y_batch)
                 train_loss += batch_loss / n_batches
 
+                parameters = []
                 grad_in = self.loss.get_grad_in(y_pred, y_batch)
                 for layer in reversed(self.layers):
-                    if isinstance(layer, Linear):
-                        self.grad_table[layer] = grad_in
                     grad_in = layer.backward(grad_in)
+                    for param in layer.get_parameters():
+                        parameters.append(param)
 
-                for layer in self.layers:
-                    if not isinstance(layer, Linear):
-                        continue
-                    grad_out = self.grad_table[layer]
-                    grad_param = layer.get_grad_param(grad_out)
-                    layer.update_parameters(self.optimizer, grad_param)
+                self.optimizer.apply_gradients(parameters)
 
                 if metrics:
                     for name, metric in metrics.items():
