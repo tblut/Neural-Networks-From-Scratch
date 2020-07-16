@@ -6,10 +6,12 @@ This is a learning project for understanding how neural networks are trained and
 - Gradient checking
 - Layers: Linear, ReLU, Sigmoid, Softmax
 - Glorot and He weight initialization
-- Vanilla stochastic gradient descent (SGD) optimizer
+- L1 and L2 regularization
+- Stochastic gradient descent (SGD) optimizer with momentum
 - MSE and cross-entropy losses
 - Full training loop with validation set and custom metrics
 - Builtin MNIST dataset with automatic download and caching
+- Saving and loading of model weights
 
 ## Example
 ```python
