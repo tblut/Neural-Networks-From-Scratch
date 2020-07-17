@@ -10,8 +10,8 @@ This is a learning project for understanding how neural networks are trained and
 - Stochastic gradient descent (SGD) optimizer with momentum
 - MSE and cross-entropy losses
 - Full training loop with validation set and custom metrics
-- Builtin MNIST dataset with automatic download and caching
-- Saving and loading of model weights
+- Built-in MNIST dataset with automatic download and caching
+- Saving and loading model weights
 
 ## Example
 ```python
